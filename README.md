@@ -31,7 +31,7 @@ Project ini masih dalam tahap pengembangan aktif. Fitur Flow Detector,  dikerjak
 
 ⚠️ Disclaimer
 
-> Project365-LD dibuat untuk "educational & personal" use saja.  
+> Project365-LD dibuat untuk "educational & personal use" saja.  
 > Bukan merupakan saran finansial atau rekomendasi trading.  
 > Semua data diambil dari public API. Gunakan dengan risiko sendiri.
 
