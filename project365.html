@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PROJECT365</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+    :root {
+      --bg:       #080600;
+      --surface:  #0f0d00;
+      --surface2: #181400;
+      --border:   #261f00;
+      --muted:    #4a4010;
+      --text:     #b8a860;
+      --bright:   #f0e090;
+      --gold:     #c9a227;
+      --gold-lit: #f0c040;
+      --gold-dim: #6a5512;
+      --green:    #3db870;
+      --red:      #cc3333;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Space Grotesk', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── TOPBAR ── */
+    .topbar {
+      height: 54px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 14px;
+      flex-shrink: 0;
+      position: sticky;
+      top: 0;
+      z-index: 250;
+    }
+    .logo-wrap { display: flex; align-items: center; gap: 10px; }
+    .logo-img { width: 30px; height: 30px; object-fit: contain; }
+    .logo-text {
+      font-family: 'Space Mono', monospace;
+      font-size: 16px; font-weight: 700;
+      color: var(--gold-lit); letter-spacing: 0.12em;
+    }
+    .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+    .status-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--gold); box-shadow: 0 0 7px var(--gold);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+    .clock { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--gold); }
+
+    /* ── HAMBURGER ── */
+    .hamburger {
+      width: 36px; height: 36px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+      background: transparent; border: 1px solid var(--border);
+      border-radius: 6px; cursor: pointer; flex-shrink: 0; transition: all .15s;
+    }
+    .hamburger:hover { border-color: var(--gold-dim); background: rgba(201,162,39,.05); }
+    .hamburger span { width: 18px; height: 2px; background: var(--gold); border-radius: 1px; transition: all .25s ease; }
+    .hamburger.active span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .hamburger.active span:nth-child(2) { opacity: 0; }
+    .hamburger.active span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* ── DROPDOWN ── */
+    .dropdown { position: relative; }
+    .dropdown-toggle {
+      display: flex; align-items: center; gap: 6px;
+      background: transparent; border: 1px solid var(--border);
+      border-radius: 6px; padding: 7px 12px;
+      color: var(--text); font-family: 'Space Grotesk', sans-serif;
+      font-size: 12px; font-weight: 600; cursor: pointer; transition: all .15s;
+    }
+    .dropdown-toggle:hover { border-color: var(--gold-dim); color: var(--gold-lit); }
+    .dropdown-toggle .caret { font-size: 9px; color: var(--gold-dim); transition: transform .2s; }
+    .dropdown.open .dropdown-toggle .caret { transform: rotate(180deg); }
+    .dropdown-menu {
+      position: absolute; top: calc(100% + 8px); right: 0;
+      min-width: 180px; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 6px; display: none; flex-direction: column; gap: 2px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.5); z-index: 200;
+    }
+    .dropdown.open .dropdown-menu { display: flex; }
+    .dropdown-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px; border-radius: 5px;
+      color: var(--text); font-size: 12px; cursor: pointer; transition: all .12s;
+    }
+    .dropdown-item:hover { background: rgba(201,162,39,.08); color: var(--gold-lit); }
+    .dropdown-divider { height: 1px; background: var(--border); margin: 4px 2px; }
+
+    /* ── LAYOUT ── */
+    .body-wrap { display: flex; flex: 1; overflow: hidden; position: relative; }
+    .overlay {
+      position: fixed; inset: 54px 0 0 0;
+      background: rgba(0,0,0,.55); z-index: 140;
+      opacity: 0; visibility: hidden; transition: opacity .25s ease;
+    }
+    .overlay.visible { opacity: 1; visibility: visible; }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: 240px; background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; flex-shrink: 0;
+      position: fixed; top: 54px; left: 0; bottom: 0; z-index: 150;
+      transform: translateX(-100%); transition: transform .28s ease;
+    }
+    .sidebar.open { transform: translateX(0); box-shadow: 8px 0 24px rgba(0,0,0,.4); }
+    .sidebar-header {
+      padding: 16px 18px; border-bottom: 1px solid var(--border);
+      font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700;
+      letter-spacing: .14em; color: var(--gold-dim); text-transform: uppercase;
+    }
+    .nav-list { display: flex; flex-direction: column; padding: 8px 0; }
+    .nav-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 18px; color: var(--text); cursor: pointer;
+      border-left: 2px solid transparent; font-size: 13px; font-weight: 500;
+      transition: all .15s;
+    }
+    .nav-item:hover { color: var(--gold-lit); background: rgba(201,162,39,.05); }
+    .nav-item.active { color: var(--gold-lit); border-left-color: var(--gold); background: rgba(201,162,39,.08); }
+    .nav-icon { width: 20px; height: 20px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--gold-dim); transition: color .15s; }
+    .nav-icon svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+    .nav-item:hover .nav-icon, .nav-item.active .nav-icon { color: var(--gold); }
+    .nav-folder-toggle { cursor: pointer; }
+    .nav-chevron { margin-left: auto; width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; color: var(--gold-dim); transition: transform .2s ease; flex-shrink: 0; }
+    .nav-chevron svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .nav-folder.open .nav-chevron { transform: rotate(90deg); }
+    .nav-sublist { display: flex; flex-direction: column; max-height: 0; overflow: hidden; background: rgba(0,0,0,.18); transition: max-height .25s ease; }
+    .nav-folder.open .nav-sublist { max-height: 400px; }
+    .nav-subitem {
+      display: flex; align-items: center; gap: 12px;
+      padding: 9px 18px 9px 50px; color: var(--text); cursor: pointer;
+      border-left: 2px solid transparent; font-size: 12px; font-weight: 500;
+      transition: all .12s;
+    }
+    .nav-subitem:hover { color: var(--gold-lit); background: rgba(201,162,39,.05); }
+    .nav-subitem.active { color: var(--gold-lit); border-left-color: var(--gold-dim); background: rgba(201,162,39,.07); }
+    .nav-subdot { width: 4px; height: 4px; border-radius: 50%; background: var(--gold-dim); flex-shrink: 0; }
+    .nav-subitem.active .nav-subdot, .nav-subitem:hover .nav-subdot { background: var(--gold); }
+    .nav-text { letter-spacing: .01em; }
+
+    /* ── MAIN ── */
+    .main { flex: 1; overflow-y: auto; padding: 24px; width: 100%; }
+
+    /* ── PAGE TITLE ── */
+    .page-title {
+      font-family: 'Space Mono', monospace; font-size: 18px; font-weight: 700;
+      letter-spacing: .14em; color: var(--gold-lit); margin-bottom: 4px;
+    }
+    .page-rule { height: 1px; background: var(--border); margin-bottom: 22px; }
+
+    /* ── FOOTER ── */
+    .page-footer { margin-top: 32px; padding-top: 22px; border-top: 1px solid var(--border); text-align: center; }
+    .footer-tagline { font-family: 'Space Mono', monospace; font-size: 12px; letter-spacing: .25em; color: var(--gold); text-transform: uppercase; margin-bottom: 6px; }
+    .footer-brand { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: .35em; color: var(--gold-dim); }
+
+    /* ── EMPTY PAGE ── */
+    .empty-page { margin-top: 40px; text-align: center; color: var(--muted); font-family: 'Space Mono', monospace; font-size: 12px; letter-spacing: .04em; }
+
+    /* ════════════════════════════════════════
+       SCANNER — HC TERMINAL LOGIC + P365 STYLE
+       ════════════════════════════════════════ */
+
+    /* Anomaly bar */
+    .sc-anomaly {
+      background: rgba(201,162,39,.04);
+      border: 1px solid rgba(201,162,39,.18);
+      border-radius: 7px;
+      padding: 7px 12px;
+      display: flex; align-items: center; gap: 8px;
+      flex-wrap: wrap; min-height: 34px;
+      margin-bottom: 14px;
+    }
+    .sc-anomaly-lbl {
+      font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700;
+      letter-spacing: .08em; color: var(--gold); white-space: nowrap; flex-shrink: 0;
+    }
+    .sc-anomaly-tags { display: flex; flex-wrap: wrap; gap: 5px; flex: 1; }
+    .sc-anomaly-tag {
+      font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700;
+      padding: 2px 8px; border-radius: 4px;
+      background: rgba(201,162,39,.1); color: var(--gold-lit);
+      border: 1px solid rgba(201,162,39,.25); cursor: pointer; transition: background .12s;
+    }
+    .sc-anomaly-tag:hover { background: rgba(201,162,39,.2); }
+    .sc-anomaly-empty { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); }
+
+    /* Filter bar */
+    .sc-filter-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 8px; margin-bottom: 12px;
+    }
+    .sc-tabs { display: flex; gap: 4px; }
+    .sc-tab {
+      padding: 5px 12px; font-family: 'Space Mono', monospace; font-size: 10px;
+      border: 1px solid var(--border); border-radius: 4px; cursor: pointer;
+      color: var(--muted); background: transparent; transition: all .12s;
+    }
+    .sc-tab:hover { color: var(--gold); border-color: var(--gold-dim); }
+    .sc-tab.active { color: var(--gold-lit); border-color: var(--gold); background: rgba(201,162,39,.08); }
+    .sc-status {
+      font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .sc-dot {
+      width: 6px; height: 6px; border-radius: 50%; background: var(--muted);
+      display: inline-block; transition: background .3s;
+    }
+    .sc-dot.live { background: var(--green); box-shadow: 0 0 5px var(--green); animation: pulse 2s infinite; }
+    .sc-dot.error { background: var(--red); }
+
+    /* Grid 2-kolom ticker cards — layout HC Terminal */
+    .sc-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+      margin-bottom: 12px;
+    }
+    @media (max-width: 540px) { .sc-grid { grid-template-columns: 1fr; } }
+
+    .sc-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 7px; padding: 11px 12px; cursor: pointer;
+      transition: all .15s; position: relative; overflow: hidden;
+    }
+    .sc-card::after {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: var(--border); transition: background .15s;
+    }
+    .sc-card.up::after { background: var(--green); }
+    .sc-card.dn::after { background: var(--red); }
+    .sc-card:hover { border-color: var(--gold-dim); background: var(--surface2); }
+
+    .sc-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 3px; }
+    .sc-card-sym { font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 700; color: var(--gold-lit); }
+    .sc-card-chg { font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700; }
+    .sc-card-chg.up { color: var(--green); }
+    .sc-card-chg.dn { color: var(--red); }
+    .sc-card-price { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--text); margin-bottom: 5px; }
+
+    /* Volume bar mini */
+    .sc-vol-bar { height: 2px; background: var(--border); border-radius: 1px; margin-bottom: 6px; overflow: hidden; }
+    .sc-vol-fill { height: 100%; border-radius: 1px; background: var(--gold-dim); transition: width .4s ease; }
+
+    .sc-card-foot { display: flex; justify-content: space-between; align-items: center; }
+    .sc-card-vol { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--muted); }
+
+    /* Rating tag HOT / WARM / COLD */
+    .sc-rat {
+      font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700;
+      padding: 2px 6px; border-radius: 3px; letter-spacing: .04em;
+    }
+    .sc-rat.hot { background: rgba(61,184,112,.1); color: var(--green); border: 1px solid rgba(61,184,112,.25); }
+    .sc-rat.warm { background: rgba(201,162,39,.1); color: var(--gold); border: 1px solid rgba(201,162,39,.28); }
+    .sc-rat.cold { background: rgba(74,64,16,.3); color: var(--muted); border: 1px solid rgba(74,64,16,.6); }
+
+    /* Status / loading */
+    .sc-loading {
+      grid-column: 1/-1; text-align: center; padding: 32px;
+      font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted);
+    }
+    .sc-spinner {
+      display: inline-block; width: 18px; height: 18px;
+      border: 2px solid var(--border); border-top-color: var(--gold);
+      border-radius: 50%; animation: spin .8s linear infinite;
+      vertical-align: middle; margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .sc-error {
+      grid-column: 1/-1; text-align: center; padding: 28px;
+      font-family: 'Space Mono', monospace; font-size: 11px; color: var(--red);
+    }
+    .sc-retry {
+      display: inline-block; margin-top: 8px; padding: 5px 14px;
+      background: rgba(204,51,51,.08); border: 1px solid rgba(204,51,51,.3);
+      border-radius: 4px; color: var(--red); font-size: 11px;
+      font-family: 'Space Mono', monospace; cursor: pointer; transition: all .12s;
+    }
+    .sc-retry:hover { background: rgba(204,51,51,.16); }
+
+    /* Modal coin detail */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.72);
+      z-index: 500; display: none; align-items: center; justify-content: center; padding: 16px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 20px; width: 100%; max-width: 400px;
+      position: relative; max-height: 90vh; overflow-y: auto;
+    }
+    .modal-close {
+      position: absolute; top: 12px; right: 12px;
+      background: transparent; border: 1px solid var(--border);
+      color: var(--muted); width: 26px; height: 26px; border-radius: 4px;
+      font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: all .12s;
+    }
+    .modal-close:hover { border-color: var(--gold-dim); color: var(--gold); }
+    .modal-sym {
+      font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700;
+      color: var(--gold-lit); margin-bottom: 2px;
+    }
+    .modal-chg { font-family: 'Space Mono', monospace; font-size: 14px; font-weight: 700; }
+    .modal-chg.up { color: var(--green); }
+    .modal-chg.dn { color: var(--red); }
+    .modal-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+    .modal-rule { height: 1px; background: var(--border); margin: 12px 0; }
+    .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .modal-metric { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 10px; }
+    .modal-metric-lbl { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--muted); margin-bottom: 4px; letter-spacing: .06em; text-transform: uppercase; }
+    .modal-metric-val { font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700; color: var(--text); }
+
+    /* Range bar 24h */
+    .range-wrap { margin-top: 12px; }
+    .range-lbl { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--muted); margin-bottom: 6px; letter-spacing: .06em; text-transform: uppercase; }
+    .range-bar { height: 4px; background: var(--border); border-radius: 2px; position: relative; }
+    .range-fill { height: 100%; background: linear-gradient(90deg, var(--red), var(--green)); border-radius: 2px; }
+    .range-marker {
+      position: absolute; top: 50%; transform: translate(-50%, -50%);
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--gold-lit); border: 2px solid var(--surface2);
+    }
+    .range-ends { display: flex; justify-content: space-between; margin-top: 4px; }
+    .range-end { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--muted); }
+
+  </style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <button class="hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="Buka menu">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="logo-wrap">
+    <span class="logo-text">PROJECT365</span>
+  </div>
+  <div class="topbar-right">
+    <div class="status-dot"></div>
+    <div class="clock" id="clock">--:--:--</div>
+    <div class="dropdown" id="accountDropdown">
+      <button class="dropdown-toggle" onclick="toggleDropdown()">
+        Akun <span class="caret">▾</span>
+      </button>
+      <div class="dropdown-menu">
+        <div class="dropdown-item">👤 Profil</div>
+        <div class="dropdown-item">⚙️ Pengaturan</div>
+        <div class="dropdown-item">🎨 Tema</div>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-item">🚪 Keluar</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="body-wrap">
+  <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">Navigasi</div>
+    <div class="nav-list">
+      <div class="nav-item active" data-page="dashboard">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg></span>
+        <span class="nav-text">Dashboard</span>
+      </div>
+      <div class="nav-item" data-page="">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 17 9 11l4 4 8-8"/><path d="M17 7h4v4"/></svg></span>
+        <span class="nav-text">Technical Analysis</span>
+      </div>
+      <div class="nav-item" data-page="">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/><path d="M9 13h6"/><path d="M9 17h6"/></svg></span>
+        <span class="nav-text">Fundamental Analysis</span>
+      </div>
+      <div class="nav-folder" id="folder-mi">
+        <div class="nav-item nav-folder-toggle" onclick="toggleNavFolder(this)">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18Z"/></svg></span>
+          <span class="nav-text">Market Intelligence</span>
+          <span class="nav-chevron"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></span>
+        </div>
+        <div class="nav-sublist">
+          <div class="nav-subitem" data-page="scanner"><span class="nav-subdot"></span><span class="nav-text">Scanner</span></div>
+          <div class="nav-subitem" data-page="flow-detector"><span class="nav-subdot"></span><span class="nav-text">Flow Detector</span></div>
+          <div class="nav-subitem" data-page="coin-flow"><span class="nav-subdot"></span><span class="nav-text">Coin Flow</span></div>
+          <div class="nav-subitem" data-page="analysis"><span class="nav-subdot"></span><span class="nav-text">Analysis</span></div>
+          <div class="nav-subitem" data-page="heatmap"><span class="nav-subdot"></span><span class="nav-text">Heatmap</span></div>
+          <div class="nav-subitem" data-page="route-score"><span class="nav-subdot"></span><span class="nav-text">Route Strength Score</span></div>
+          <div class="nav-subitem" data-page="recommendation"><span class="nav-subdot"></span><span class="nav-text">Recommendation</span></div>
+          <div class="nav-subitem" data-page="smart-watchlist"><span class="nav-subdot"></span><span class="nav-text">Smart Watchlist</span></div>
+        </div>
+      </div>
+      <div class="nav-item" data-page=""><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2Z"/><path d="M9 13h6"/><path d="M9 17h6"/></svg></span><span class="nav-text">Trading Journal</span></div>
+      <div class="nav-item" data-page=""><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.4 2.4-2-2Z"/></svg></span><span class="nav-text">Tools</span></div>
+      <div class="nav-item" data-page=""><span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg></span><span class="nav-text">Settings</span></div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- PAGE: DASHBOARD -->
+    <div class="page" id="page-dashboard">
+      <div class="page-title">DASHBOARD</div>
+      <div class="page-rule"></div>
+      <div class="empty-page">Halaman ini masih kosong — siap disusun ulang.</div>
+    </div>
+
+    <!-- PAGE: SCANNER -->
+    <div class="page" id="page-scanner" style="display:none">
+      <div class="page-title">SCANNER</div>
+      <div class="page-rule"></div>
+
+      <!-- Anomaly Bar -->
+      <div class="sc-anomaly" id="sc-anomaly">
+        <span class="sc-anomaly-lbl">⚡ VOL SPIKE</span>
+        <div class="sc-anomaly-tags" id="sc-anomaly-tags">
+          <span class="sc-anomaly-empty">Memuat...</span>
+        </div>
+      </div>
+
+      <!-- Filter bar -->
+      <div class="sc-filter-bar">
+        <div class="sc-tabs" id="sc-tabs">
+          <button class="sc-tab active" data-filter="all">Semua</button>
+          <button class="sc-tab" data-filter="gainers">Gainers</button>
+          <button class="sc-tab" data-filter="losers">Losers</button>
+        </div>
+        <div class="sc-status">
+          <span class="sc-dot" id="sc-dot"></span>
+          <span id="sc-updated">Memuat data...</span>
+        </div>
+      </div>
+
+      <!-- Ticker grid -->
+      <div class="sc-grid" id="sc-grid">
+        <div class="sc-loading"><span class="sc-spinner"></span>Mengambil data pasar...</div>
+      </div>
+    </div>
+
+    <!-- PAGE: FLOW DETECTOR (placeholder) -->
+    <div class="page" id="page-flow-detector" style="display:none">
+      <div class="page-title">FLOW DETECTOR</div>
+      <div class="page-rule"></div>
+      <div class="empty-page">Segera hadir.</div>
+    </div>
+
+    <!-- PAGE: COIN FLOW (placeholder) -->
+    <div class="page" id="page-coin-flow" style="display:none">
+      <div class="page-title">COIN FLOW</div>
+      <div class="page-rule"></div>
+      <div class="empty-page">Segera hadir.</div>
+    </div>
+
+    <!-- PAGE: ANALYSIS (placeholder) -->
+    <div class="page" id="page-analysis" style="display:none">
+      <div class="page-title">ANALYSIS</div>
+      <div class="page-rule"></div>
+      <div class="empty-page">Segera hadir.</div>
+    </div>
+
+    <!-- PAGE: HEATMAP (placeholder) -->
+    <div class="page" id="page-heatmap" style="display:none">
+      <div class="page-title">HEATMAP</div>
+      <div class="page-rule"></div>
+      <div class="empty-page">Segera hadir.</div>
+    </div>
+
+    <!-- PAGE: ROUTE STRENGTH SCORE (placeholder) -->
+    <div class="page" id="page-route-score" style="display:none">
+      <div class="page-title">ROUTE STRENGTH SCORE</div>
+      <div class="page-rule"></div>
+      <div class="empty-page">Segera hadir.</div>
+    </div>
+
+    <!-- PAGE: RECOMMENDATION (placeholder) -->
+    <div class="page" id="page-recommendation" style="display:none">
+      <div class="page-title">RECOMMENDATION</div>
+      <div class="page-rule"></div>
+      <div class="empty-page">Segera hadir.</div>
+    </div>
+
+    <!-- PAGE: SMART WATCHLIST (placeholder) -->
+    <div class="page" id="page-smart-watchlist" style="display:none">
+      <div class="page-title">SMART WATCHLIST</div>
+      <div class="page-rule"></div>
+      <div class="empty-page">Segera hadir.</div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="page-footer">
+      <div class="footer-tagline">Observe • Think • Execute</div>
+      <div class="footer-brand">PROJECT365</div>
+    </div>
+  </main>
+</div>
+
+<!-- COIN MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    <div class="modal-head">
+      <div class="modal-sym" id="modal-sym">—</div>
+      <div class="modal-chg" id="modal-chg">—</div>
+      <div id="modal-rat"></div>
+    </div>
+    <div class="modal-grid">
+      <div class="modal-metric">
+        <div class="modal-metric-lbl">Harga</div>
+        <div class="modal-metric-val" id="modal-price">—</div>
+      </div>
+      <div class="modal-metric">
+        <div class="modal-metric-lbl">Volume 24h</div>
+        <div class="modal-metric-val" id="modal-vol">—</div>
+      </div>
+      <div class="modal-metric">
+        <div class="modal-metric-lbl">Jumlah Trade</div>
+        <div class="modal-metric-val" id="modal-trades">—</div>
+      </div>
+      <div class="modal-metric">
+        <div class="modal-metric-lbl">Sektor</div>
+        <div class="modal-metric-val" id="modal-sector">—</div>
+      </div>
+    </div>
+    <div class="range-wrap">
+      <div class="range-lbl">Range 24 Jam</div>
+      <div class="range-bar">
+        <div class="range-fill" style="width:100%"></div>
+        <div class="range-marker" id="modal-marker" style="left:50%"></div>
+      </div>
+      <div class="range-ends">
+        <span class="range-end" id="modal-low">—</span>
+        <span class="range-end" id="modal-high">—</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ════════════════════════════════════════
+  // CLOCK
+  // ════════════════════════════════════════
+  function updateClock() {
+    document.getElementById('clock').textContent =
+      new Date().toLocaleTimeString('id-ID', { hour12: false });
+  }
+  updateClock(); setInterval(updateClock, 1000);
+
+  // ════════════════════════════════════════
+  // SIDEBAR
+  // ════════════════════════════════════════
+  function toggleSidebar() {
+    document.getElementById('hamburger').classList.toggle('active');
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('overlay').classList.toggle('visible');
+  }
+  function closeSidebar() {
+    document.getElementById('hamburger').classList.remove('active');
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('overlay').classList.remove('visible');
+  }
+
+  // ════════════════════════════════════════
+  // DROPDOWN
+  // ════════════════════════════════════════
+  function toggleDropdown() {
+    document.getElementById('accountDropdown').classList.toggle('open');
+  }
+  document.addEventListener('click', e => {
+    const dd = document.getElementById('accountDropdown');
+    if (!dd.contains(e.target)) dd.classList.remove('open');
+  });
+
+  // ════════════════════════════════════════
+  // PAGE SWITCHING
+  // ════════════════════════════════════════
+  function switchPage(pageId) {
+    if (!pageId) return;
+    document.querySelectorAll('.page').forEach(p => {
+      p.style.display = (p.id === 'page-' + pageId) ? '' : 'none';
+    });
+    // Auto-init scanner saat pertama dibuka
+    if (pageId === 'scanner' && !scannerInited) initScanner();
+  }
+
+  document.querySelectorAll('.nav-item:not(.nav-folder-toggle)').forEach(item => {
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      document.querySelectorAll('.nav-subitem').forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+      switchPage(item.dataset.page);
+      if (window.innerWidth <= 860) closeSidebar();
+    });
+  });
+
+  function toggleNavFolder(el) {
+    el.closest('.nav-folder').classList.toggle('open');
+  }
+
+  document.querySelectorAll('.nav-subitem').forEach(item => {
+    item.addEventListener('click', e => {
+      e.stopPropagation();
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      document.querySelectorAll('.nav-subitem').forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+      switchPage(item.dataset.page);
+      if (window.innerWidth <= 860) closeSidebar();
+    });
+  });
+
+  // ════════════════════════════════════════
+  // SEKTOR MAP
+  // ════════════════════════════════════════
+  const SECTOR_MAP = {
+    BTC:'Store of Value', ETH:'Smart Contract', BNB:'Exchange', SOL:'Smart Contract',
+    XRP:'Payment', ADA:'Smart Contract', AVAX:'Smart Contract', DOT:'Interop',
+    MATIC:'Layer 2', LINK:'Oracle', UNI:'DeFi', AAVE:'DeFi', MKR:'DeFi',
+    COMP:'DeFi', CRV:'DeFi', SUSHI:'DeFi', YFI:'DeFi', SNX:'DeFi',
+    LTC:'Payment', BCH:'Payment', TRX:'Smart Contract', ETC:'Smart Contract',
+    ICP:'Web3', FIL:'Storage', AR:'Storage', GRT:'Indexing', OCEAN:'Data',
+    MANA:'Metaverse', SAND:'Metaverse', AXS:'GameFi', GALA:'GameFi', IMX:'GameFi',
+    NEAR:'Smart Contract', FTM:'Smart Contract', ONE:'Smart Contract', ALGO:'Smart Contract',
+    ATOM:'Interop', OSMO:'DeFi', INJ:'DeFi', DYDX:'DeFi', GMX:'DeFi', PERP:'DeFi',
+    APT:'Smart Contract', SUI:'Smart Contract', SEI:'Smart Contract', TIA:'Modular',
+    DOGE:'Meme', SHIB:'Meme', PEPE:'Meme', FLOKI:'Meme', BONK:'Meme', WIF:'Meme',
+    WLD:'AI', FET:'AI', AGIX:'AI', RNDR:'AI', AKT:'AI', TAO:'AI',
+    OP:'Layer 2', ARB:'Layer 2', BLAST:'Layer 2', ZK:'Layer 2', STRK:'Layer 2',
+    LDO:'DeFi', RPL:'DeFi', FXS:'DeFi', FRAX:'Stablecoin', USDC:'Stablecoin',
+    NOT:'Telegram', TON:'Telegram', DOGS:'Telegram',
+    JUP:'DeFi', PYTH:'Oracle', RAY:'DeFi', JTO:'DeFi',
+    CFX:'Smart Contract', KLAY:'Smart Contract', HBAR:'Smart Contract',
+    VET:'Enterprise', XLM:'Payment', ZEC:'Privacy', XMR:'Privacy',
+  };
+  function getSector(base) {
+    return SECTOR_MAP[base] || 'Altcoin';
+  }
+
+  // ════════════════════════════════════════
+  // FORMATTER
+  // ════════════════════════════════════════
+  function fmtPrice(n) {
+    if (!isFinite(n)) return '—';
+    if (n >= 1000) return '$' + n.toLocaleString('en-US', {maximumFractionDigits: 2});
+    if (n >= 1)    return '$' + n.toFixed(4);
+    if (n >= 0.01) return '$' + n.toFixed(5);
+    return '$' + n.toFixed(8);
+  }
+  function fmtUSD(n) {
+    if (!isFinite(n)) return '—';
+    if (n >= 1e9) return '$' + (n/1e9).toFixed(2) + 'B';
+    if (n >= 1e6) return '$' + (n/1e6).toFixed(2) + 'M';
+    if (n >= 1e3) return '$' + (n/1e3).toFixed(1) + 'K';
+    return '$' + n.toFixed(0);
+  }
+
+  // ════════════════════════════════════════
+  // SCANNER — LOGIKA HC TERMINAL
+  // ════════════════════════════════════════
+  let scannerInited = false;
+  let scannerData   = [];   // pool semua (byVolume default)
+  let scannerPools  = { all: [], gainers: [], losers: [] };
+  let activeFilter  = 'all';
+  let scannerTimer  = null;
+  const LEVERAGED   = /^(BTC|ETH|BNB)(UP|DOWN|BULL|BEAR)USDT$/i;
+
+  function initScanner() {
+    scannerInited = true;
+    setupFilterTabs();
+    doScan();
+    scannerTimer = setInterval(doScan, 60000);
+  }
+
+  function setupFilterTabs() {
+    document.querySelectorAll('#sc-tabs .sc-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        activeFilter = btn.dataset.filter;
+        document.querySelectorAll('#sc-tabs .sc-tab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderGrid();
+      });
+    });
+  }
+
+  // Fungsi fetch utama — persis logika HC Terminal
+  async function doScan() {
+    setStatus('loading');
+    try {
+      const res  = await fetch('https://api.binance.com/api/v3/ticker/24hr');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const raw  = await res.json();
+
+      // Filter USDT pair, bukan leveraged token
+      const usdt = raw.filter(t =>
+        t.symbol.endsWith('USDT') &&
+        !LEVERAGED.test(t.symbol) &&
+        parseFloat(t.quoteVolume) > 0
+      );
+
+      // Mapper ke objek coin
+      const toCoin = t => {
+        const base = t.symbol.replace('USDT', '');
+        return {
+          sym:    t.symbol,
+          base,
+          price:  parseFloat(t.lastPrice),
+          chg:    parseFloat(t.priceChangePercent),
+          vol:    parseFloat(t.quoteVolume),
+          high:   parseFloat(t.highPrice),
+          low:    parseFloat(t.lowPrice),
+          trades: parseInt(t.count, 10) || 0,
+          sector: getSector(base),
+        };
+      };
+
+      // 3 pool terpisah — HC Terminal style
+      // All     → top 100 by volume (coin paling liquid)
+      // Gainers → sort by % change DESC dari FULL pool → top 100
+      // Losers  → sort by % change ASC dari FULL pool  → top 100
+      const allMapped = usdt.map(toCoin);
+
+      scannerPools.all = [...allMapped]
+        .sort((a,b) => b.vol - a.vol)
+        .slice(0, 100);
+
+      scannerPools.gainers = [...allMapped]
+        .filter(c => c.chg > 0)
+        .sort((a,b) => b.chg - a.chg)
+        .slice(0, 100);
+
+      scannerPools.losers = [...allMapped]
+        .filter(c => c.chg < 0)
+        .sort((a,b) => a.chg - b.chg)
+        .slice(0, 100);
+
+      // scannerData → pool yang aktif untuk modal lookup
+      scannerData = [...scannerPools.all, ...scannerPools.gainers, ...scannerPools.losers];
+      // deduplicate untuk lookup
+      const seen = new Set();
+      scannerData = scannerData.filter(c => { if (seen.has(c.sym)) return false; seen.add(c.sym); return true; });
+
+      renderAnomalyBar(scannerPools.all);
+      renderGrid();
+      setStatus('live');
+    } catch(e) {
+      console.error(e);
+      setStatus('error');
+      document.getElementById('sc-grid').innerHTML =
+        `<div class="sc-error">⚠ Gagal memuat data.<br><span class="sc-retry" onclick="doScan()">Coba Lagi</span></div>`;
+    }
+  }
+
+  // Anomaly bar — spike = vol > avg*2.5 dan |chg| >= 3%
+  function renderAnomalyBar(pool) {
+    const tagsEl = document.getElementById('sc-anomaly-tags');
+    if (!pool.length) { tagsEl.innerHTML = '<span class="sc-anomaly-empty">Belum ada data</span>'; return; }
+
+    const avgVol = pool.reduce((s,c) => s + c.vol, 0) / pool.length;
+    const spikes = pool
+      .filter(c => c.vol > avgVol * 2.5 && Math.abs(c.chg) >= 3)
+      .sort((a,b) => b.vol - a.vol)
+      .slice(0, 8);
+
+    if (!spikes.length) { tagsEl.innerHTML = '<span class="sc-anomaly-empty">Tidak ada spike terdeteksi</span>'; return; }
+
+    tagsEl.innerHTML = spikes.map(c => {
+      const s = c.chg >= 0 ? '+' : '';
+      return `<span class="sc-anomaly-tag" onclick="openModal('${c.sym}')">${c.base} ${s}${c.chg.toFixed(1)}%</span>`;
+    }).join('');
+  }
+
+  // Rating — HOT/WARM/COLD persis HC Terminal
+  function getRating(c, medVol) {
+    if (c.chg >= 5 || (c.chg >= 2 && c.vol > medVol * 2)) return 'HOT';
+    if (c.chg > 0) return 'WARM';
+    return 'COLD';
+  }
+  function ratHtml(r) {
+    const cls = r === 'HOT' ? 'hot' : r === 'WARM' ? 'warm' : 'cold';
+    return `<span class="sc-rat ${cls}">${r}</span>`;
+  }
+  function median(arr) {
+    if (!arr.length) return 0;
+    const s = [...arr].sort((a,b) => a-b);
+    const m = Math.floor(s.length/2);
+    return s.length%2 ? s[m] : (s[m-1]+s[m])/2;
+  }
+
+  // Render grid
+  function renderGrid() {
+    const pool = scannerPools[activeFilter] || scannerPools.all;
+    const grid = document.getElementById('sc-grid');
+    if (!pool.length) {
+      grid.innerHTML = `<div class="sc-loading">Tidak ada data untuk filter ini.</div>`;
+      return;
+    }
+
+    const medVol = median(pool.map(c => c.vol));
+    const maxVol = Math.max(...pool.map(c => c.vol), 1);
+
+    grid.innerHTML = pool.map(c => {
+      const rating  = getRating(c, medVol);
+      const ud      = c.chg >= 0 ? 'up' : 'dn';
+      const sign    = c.chg >= 0 ? '+' : '';
+      const volPct  = Math.min(c.vol / maxVol * 100, 100).toFixed(1);
+      return `
+        <div class="sc-card ${ud}" onclick="openModal('${c.sym}')">
+          <div class="sc-card-top">
+            <span class="sc-card-sym">${c.base}</span>
+            <span class="sc-card-chg ${ud}">${sign}${c.chg.toFixed(2)}%</span>
+          </div>
+          <div class="sc-card-price">${fmtPrice(c.price)}</div>
+          <div class="sc-vol-bar"><div class="sc-vol-fill" style="width:${volPct}%"></div></div>
+          <div class="sc-card-foot">
+            <span class="sc-card-vol">${fmtUSD(c.vol)}</span>
+            ${ratHtml(rating)}
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // Status dot + teks
+  function setStatus(s) {
+    const dot = document.getElementById('sc-dot');
+    const upd = document.getElementById('sc-updated');
+    dot.className = 'sc-dot';
+    if (s === 'live') {
+      dot.classList.add('live');
+      upd.textContent = 'Live · ' + new Date().toLocaleTimeString('id-ID', {hour12:false});
+    } else if (s === 'error') {
+      dot.classList.add('error');
+      upd.textContent = 'Gagal dimuat';
+    } else {
+      upd.textContent = 'Memuat...';
+    }
+  }
+
+  // ════════════════════════════════════════
+  // MODAL
+  // ════════════════════════════════════════
+  function openModal(sym) {
+    const coin = scannerData.find(c => c.sym === sym);
+    if (!coin) return;
+
+    document.getElementById('modal-sym').textContent = coin.base;
+
+    const chgEl = document.getElementById('modal-chg');
+    const sign  = coin.chg >= 0 ? '+' : '';
+    chgEl.textContent = sign + coin.chg.toFixed(2) + '%';
+    chgEl.className = 'modal-chg ' + (coin.chg >= 0 ? 'up' : 'dn');
+
+    const medVol = median(scannerData.map(c => c.vol));
+    document.getElementById('modal-rat').innerHTML = ratHtml(getRating(coin, medVol));
+
+    document.getElementById('modal-price').textContent   = fmtPrice(coin.price);
+    document.getElementById('modal-vol').textContent     = fmtUSD(coin.vol);
+    document.getElementById('modal-trades').textContent  = coin.trades > 0 ? coin.trades.toLocaleString('en-US') : '—';
+    document.getElementById('modal-sector').textContent  = coin.sector;
+    document.getElementById('modal-low').textContent     = fmtPrice(coin.low);
+    document.getElementById('modal-high').textContent    = fmtPrice(coin.high);
+
+    let pct = 50;
+    if (coin.high > coin.low) pct = Math.max(0, Math.min(100, (coin.price - coin.low) / (coin.high - coin.low) * 100));
+    document.getElementById('modal-marker').style.left = pct + '%';
+
+    document.getElementById('modal-overlay').classList.add('open');
+  }
+
+  function closeModal(e) {
+    if (e.target.id === 'modal-overlay') closeModalDirect();
+  }
+  function closeModalDirect() {
+    document.getElementById('modal-overlay').classList.remove('open');
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModalDirect(); });
+
+</script>
+
+</body>
+</html>
